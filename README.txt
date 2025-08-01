@@ -1,0 +1,1 @@
+This is a sample restaurant web app structure with multilingual UI toggle, countdown timer, and order system.
