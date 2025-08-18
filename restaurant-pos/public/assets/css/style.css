@@ -1,0 +1,7 @@
+/* public/assets/css/style.css */
+body { font-family: Arial, sans-serif; background:#f4f6f8; }
+.container { max-width:1200px; }
+.login-card { width:320px; margin:80px auto; padding:20px; border:1px solid #ddd; background:#fff; border-radius:6px; }
+.login-card input { width:100%; padding:8px; margin:6px 0; }
+.msg { color:red; margin-bottom:6px; }
+.card { border-radius:8px; }

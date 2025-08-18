@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Dashboard — Debugged (Single-file)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#f6f8fb; }
+    .sidebar { min-height:100vh; background: #0b5ed7; color: #fff; }
+    .menu-item { cursor:pointer; }
+    .card-stats { border-radius: .8rem; }
+    .badge-cat { font-size: .7rem; }
+    .order-table td, .order-table th { vertical-align: middle; }
+    .product-thumb { width:48px; height:48px; object-fit:cover; border-radius:6px; }
+    .scroll-y { max-height:420px; overflow:auto; }
+    pre.code { background:#0d1117; color:#c9d1d9; padding:12px; border-radius:6px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- SIDEBAR -->
+      <aside class="col-12 col-md-3 col-lg-2 p-0 sidebar d-flex flex-column">
+        <div class="p-3">
+          <h4 class="mb-0">🍽️ MyRestaurant</h4>
+          <small class="text-white-50">POS Dashboard (debugged)</small>
+        </div>
+        <nav class="nav flex-column px-2">
+          <a class="nav-link text-white" href="#demo">Dashboard</a>
+          <a class="nav-link text-white" href="#files">Files / Code</a>
+          <a class="nav-link text-white" href="#howto">How to run</a>
+        </nav>
+        <div class="mt-auto p-3 small text-white-50">Logged in as <strong>Manager</strong></div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="col-12 col-md-9 col-lg-10 p-4">
+        <section id="demo">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0">Point of Sale — Demo</h3>
+            <div>
+              <button class="btn btn-outline-secondary" id="btnNewOrder">New Order</button>
+              <button class="btn btn-primary" id="btnCheckoutDummy">Checkout (demo)</button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="card card-stats p-3">
+                <small class="text-muted">Today Sales</small>
+                <h5 id="statSales">$0.00</h5>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card card-stats p-3">
+                <small class="text-muted">Open Orders</small>
+                <h5 id="statOrders">0</h5>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card card-stats p-3">
+                <small class="text-muted">Items Served</small>
+                <h5 id="statItems">0</h5>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card card-stats p-3">
+                <small class="text-muted">Avg Ticket</small>
+                <h5 id="statAvg">$0.00</h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-lg-6 mb-3">
+              <div class="card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">Menu</h6>
+                  <div class="input-group w-50">
+                    <input id="searchMenu" type="search" class="form-control" placeholder="Search items...">
+                    <button class="btn btn-outline-secondary" id="clearSearch">✕</button>
+                  </div>
+                </div>
+
+                <div id="menuList" class="list-group scroll-y"></div>
+              </div>
+            </div>
+
+            <div class="col-lg-6 mb-3">
+              <div class="card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">Current Order</h6>
+                  <small class="text-muted">#<span id="orderId">1</span></small>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table order-table mb-0 align-middle">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th style="width:70px">Qty</th>
+                        <th style="width:110px">Price</th>
+                        <th style="width:90px">Total</th>
+                        <th style="width:40px"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="orderBody"></tbody>
+                  </table>
+                </div>
+
+                <div class="mt-3 d-flex justify-content-between">
+                  <div style="min-width:220px">
+                    <div class="mb-2">
+                      <label class="form-label mb-1">Discount (%)</label>
+                      <input type="number" id="discount" class="form-control" value="0" min="0" max="100">
+                    </div>
+                    <div>
+                      <label class="form-label mb-1">Tax (%)</label>
+                      <input type="number" id="tax" class="form-control" value="5" min="0" max="100">
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div>Subtotal: <strong id="subtotalText">$0.00</strong></div>
+                    <div>Discount: <strong id="discountText">$0.00</strong></div>
+                    <div>Tax: <strong id="taxText">$0.00</strong></div>
+                    <h4 class="mt-2">Total: <span id="totalText">$0.00</span></h4>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-lg-8">
+              <div class="card p-3">
+                <h6>Sales This Week (demo)</h6>
+                <canvas id="salesChart" height="120"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card p-3">
+                <h6>Recent Orders</h6>
+                <ul id="recentOrders" class="list-group list-group-flush"></ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <hr />
+
+        <section id="files">
+          <h4>Files & Example Code</h4>
+          <p>All example backend files are shown below. <strong>Note:</strong> PHP code is escaped so this single-file can be opened directly without being executed by a PHP engine. When copying code into your project, remove the HTML escaping (convert &lt;?php to <?php then save as .php files).</p>
+
+          <details>
+            <summary><strong>pos_schema.sql</strong></summary>
+            <pre class="code">-- pos_schema.sql
+CREATE DATABASE IF NOT EXISTS restaurant_pos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE restaurant_pos;
+
+-- users (for auth)
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('cashier','manager','kitchen') DEFAULT 'cashier',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- menu items
+CREATE TABLE menu_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(150) NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  category VARCHAR(100),
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- orders
+CREATE TABLE orders (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  total DECIMAL(10,2) NOT NULL,
+  tax DECIMAL(10,2) DEFAULT 0.00,
+  discount DECIMAL(10,2) DEFAULT 0.00,
+  payment_method VARCHAR(30),
+  status ENUM('open','paid','kitchen','served','cancelled') DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- order_items
+CREATE TABLE order_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT,
+  menu_item_id INT,
+  title VARCHAR(150),
+  qty INT DEFAULT 1,
+  price DECIMAL(10,2) DEFAULT 0.00,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE SET NULL
+);
+
+-- kitchen tickets (KOT)
+CREATE TABLE kot_tickets (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT,
+  item_id INT,
+  qty INT DEFAULT 1,
+  status ENUM('pending','cooking','ready','served') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
+-- sample seed data (replace the password hash with password_hash output)
+INSERT INTO users (name, email, password_hash, role) VALUES
+('Manager','manager@example.com', '$2y$10$examplehashedpasswordxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'manager');
+
+INSERT INTO menu_items (title, description, price, category) VALUES
+('Cheese Burger','Tasty beef burger with cheese',6.50,'Burgers'),
+('Veggie Pizza','Mixed vegetables with mozzarella',8.50,'Pizza'),
+('French Fries','Crispy fries',2.50,'Sides'),
+('Coke','Soft Drink',1.50,'Drinks');
+</pre>
+          </details>
+
+          <details>
+            <summary><strong>config/db.php</strong></summary>
+            <pre class="code">&lt;?php
+// config/db.php
+$DB_HOST = '127.0.0.1';
+$DB_NAME = 'restaurant_pos';
+$DB_USER = 'root';
+$DB_PASS = '';
+
+try {
+  $pdo = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4", $DB_USER, $DB_PASS, [
+    PDO::ATTR_ERRMODE =&gt; PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE =&gt; PDO::FETCH_ASSOC
+  ]);
+} catch (PDOException $e) {
+  http_response_code(500);
+  echo json_encode(['error' =&gt; 'DB connection failed']);
+  exit;
+}
+?&gt;
+</pre>
+          </details>
+
+          <details>
+            <summary><strong>api/auth.php (login + session)</strong></summary>
+            <pre class="code">&lt;?php
+// api/auth.php
+session_start();
+require_once __DIR__ . '/../config/db.php';
+header('Content-Type: application/json');
+$action = $_GET['action'] ?? '';
+
+if($action === 'login'){
+  $data = json_decode(file_get_contents('php://input'), true);
+  $email = $data['email'] ?? '';
+  $pass = $data['password'] ?? '';
+  if(!$email || !$pass) { http_response_code(400); echo json_encode(['error'=>'invalid']); exit; }
+
+  $stmt = $pdo->prepare('SELECT id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
+  $stmt->execute([$email]);
+  $user = $stmt->fetch();
+  if($user && password_verify($pass, $user['password_hash'])){
+    $_SESSION['user'] = ['id'=>$user['id'], 'name'=>$user['name'], 'role'=>$user['role']];
+    echo json_encode(['ok'=>true, 'user'=>$_SESSION['user']]);
+  } else { http_response_code(401); echo json_encode(['error'=>'invalid_credentials']); }
+  exit;
+}
+
+if($action === 'logout'){
+  session_destroy(); echo json_encode(['ok'=>true]); exit;
+}
+
+if($action === 'me'){
+  echo json_encode(['user'=>$_SESSION['user'] ?? null]); exit;
+}
+?&gt;
+</pre>
+          </details>
+
+          <details>
+            <summary><strong>api/menu.php (list)</strong></summary>
+            <pre class="code">&lt;?php
+// api/menu.php
+require_once __DIR__ . '/../config/db.php';
+header('Content-Type: application/json');
+$method = $_SERVER['REQUEST_METHOD'];
+if($method === 'GET'){
+  $q = $_GET['q'] ?? '';
+  if($q) {
+    $stmt = $pdo->prepare('SELECT * FROM menu_items WHERE is_active=1 AND (title LIKE ? OR category LIKE ?) LIMIT 200');
+    $like = "%$q%"; $stmt->execute([$like,$like]);
+  } else {
+    $stmt = $pdo->query('SELECT * FROM menu_items WHERE is_active=1');
+  }
+  echo json_encode($stmt->fetchAll());
+  exit;
+}
+?&gt;
+</pre>
+          </details>
+
+          <details>
+            <summary><strong>api/orders.php (create order + KOT)</strong></summary>
+            <pre class="code">&lt;?php
+// api/orders.php
+session_start();
+require_once __DIR__ . '/../config/db.php';
+header('Content-Type: application/json');
+$method = $_SERVER['REQUEST_METHOD'];
+if($method === 'POST'){
+  $data = json_decode(file_get_contents('php://input'), true);
+  $items = $data['items'] ?? [];
+  $tax = $data['tax'] ?? 0;
+  $discount = $data['discount'] ?? 0;
+  $payment_method = $data['payment_method'] ?? 'cash';
+  $user_id = $_SESSION['user']['id'] ?? null;
+
+  $subtotal = 0; foreach($items as $it) $subtotal += $it['price'] * $it['qty'];
+  $discount_val = $discount; // adjust logic if percentage
+  $total = ($subtotal - $discount_val) + $tax;
+
+  $pdo->beginTransaction();
+  try {
+    $stmt = $pdo->prepare('INSERT INTO orders (user_id, total, tax, discount, payment_method, status) VALUES (?,?,?,?,?,?)');
+    $stmt->execute([$user_id, $total, $tax, $discount_val, $payment_method, 'paid']);
+    $orderId = $pdo->lastInsertId();
+
+    $itStmt = $pdo->prepare('INSERT INTO order_items (order_id, menu_item_id, title, qty, price) VALUES (?,?,?,?,?)');
+    $kotStmt = $pdo->prepare('INSERT INTO kot_tickets (order_id, item_id, qty) VALUES (?,?,?)');
+    foreach($items as $it){
+      $itStmt->execute([$orderId, $it['id'] ?? null, $it['title'], $it['qty'], $it['price']]);
+      $kotStmt->execute([$orderId, $it['id'] ?? null, $it['qty']]);
+    }
+
+    $pdo->commit();
+    echo json_encode(['ok'=>true, 'order_id'=>$orderId, 'total'=>$total]);
+  } catch (Exception $e){
+    $pdo->rollBack(); http_response_code(500); echo json_encode(['error'=>'db']);
+  }
+  exit;
+}
+
+if($method === 'GET'){
+  $stmt = $pdo->query('SELECT o.*, u.name as user_name FROM orders o LEFT JOIN users u ON u.id=o.user_id ORDER BY o.created_at DESC LIMIT 20');
+  echo json_encode($stmt->fetchAll()); exit;
+}
+?&gt;
+</pre>
+          </details>
+
+          <details>
+            <summary><strong>api/kot.php (kitchen endpoint)</strong></summary>
+            <pre class="code">&lt;?php
+// api/kot.php
+require_once __DIR__ . '/../config/db.php';
+header('Content-Type: application/json');
+$method = $_SERVER['REQUEST_METHOD'];
+if($method === 'GET'){
+  $stmt = $pdo->query("SELECT k.*, o.id as order_id, o.status as order_status FROM kot_tickets k JOIN orders o ON o.id=k.order_id WHERE k.status!='served' ORDER BY k.created_at DESC");
+  echo json_encode($stmt->fetchAll()); exit;
+}
+
+if($method === 'POST'){
+  $data = json_decode(file_get_contents('php://input'), true);
+  $stmt = $pdo->prepare('UPDATE kot_tickets SET status=? WHERE id=?');
+  $stmt->execute([$data['status'],$data['id']]);
+  echo json_encode(['ok'=>true]); exit;
+}
+?&gt;
+</pre>
+          </details>
+
+        </section>
+
+        <hr />
+
+        <section id="howto">
+          <h4>How to run (short)</h4>
+          <ul>
+            <li>For a quick HTML demo: save this entire file as <code>pos_demo.html</code> and open in your browser. The demo uses mock data and will work without any backend.</li>
+            <li>To run with PHP+MySQL: copy the PHP files shown above into <code>api/</code> and the DB config into <code>config/db.php</code>. Import <code>pos_schema.sql</code> into MySQL, update DB credentials, then serve via Apache / PHP built-in server: <code>php -S localhost:8000</code>.</li>
+            <li><strong>If you saved this file as <code>.php</code> and opened it through a PHP server, PHP will try to execute any <code>&lt;?php</code> tags inside the file — that's why the example code above is escaped. When copying to real files, convert the escaped sequences back to real <code>&lt;?php</code> tags.</strong></li>
+          </ul>
+
+          <h6>Fix log</h6>
+          <p>Root cause of the error you reported (<code>SyntaxError: /: Unexpected token (1:0)</code>): the original canvas mixed raw markdown and triple-backtick code fences at the top of a file that some tools (or servers expecting JS) attempted to parse as JavaScript. To make this file safe and runnable as a static HTML demo I:</p>
+          <ol>
+            <li>Replaced the mixed-markdown document with a valid single-file HTML demo (the POS UI lives in this file and works with mock data).</li>
+            <li>Moved all backend example code into <code>&lt;details&gt;</code> blocks and escaped PHP tags so the file can be opened directly without being executed by a PHP engine.</li>
+            <li>Added clear "How to run" instructions and guidance for copying the example files into a real PHP project.</li>
+          </ol>
+
+          <p><strong>Next step — quick question:</strong> where did you run the file when you saw the error? (choose one)
+            <ol type="a">
+              <li>Opened the file directly in the browser (file:// or saved as HTML)</li>
+              <li>Served it via <code>php -S</code> or Apache/nginx (PHP server)</li>
+              <li>Used Node / a JS dev server (vite, webpack-dev-server, etc.)</li>
+              <li>Other — please describe</li>
+            </ol>
+          </p>
+
+          <p>Also: what behavior did you expect (demo-only UI, or full working PHP+MySQL stack)?</p>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    // Mock menu data (you can load this from server later)
+    const menu = [
+      { id:1, title:'Cheese Burger', price:6.5, cat:'Burgers', img:'' },
+      { id:2, title:'Veggie Pizza', price:8.5, cat:'Pizza', img:'' },
+      { id:3, title:'Grilled Sandwich', price:4.2, cat:'Sandwich', img:'' },
+      { id:4, title:'French Fries', price:2.5, cat:'Sides', img:'' },
+      { id:5, title:'Coke', price:1.5, cat:'Drinks', img:'' },
+      { id:6, title:'Chicken Kebab', price:7.0, cat:'Grill', img:'' }
+    ];
+
+    let order = { id: 1, items: [] };
+    const recent = [];
+
+    const $ = id => document.getElementById(id);
+    const fmt = v => '$' + Number(v || 0).toFixed(2);
+
+    function renderMenu(filter = ''){
+      const el = document.getElementById('menuList');
+      el.innerHTML = '';
+      const q = filter.trim().toLowerCase();
+      menu.filter(m => !q || m.title.toLowerCase().includes(q) || m.cat.toLowerCase().includes(q))
+          .forEach(m => {
+        const node = document.createElement('div');
+        node.className = 'list-group-item d-flex align-items-center gap-3 menu-item';
+        node.innerHTML = `\
+          <img src="https://via.placeholder.com/48" class="product-thumb" alt="">\
+          <div class="flex-grow-1">\
+            <div><strong>${m.title}</strong> <small class="text-muted">· ${m.cat}</small></div>\
+            <div class="text-muted small">${fmt(m.price)}</div>\
+          </div>\
+          <div><button class="btn btn-sm btn-outline-primary">Add</button></div>\
+        `;
+        node.onclick = () => addToOrder(m);
+        el.appendChild(node);
+      });
+    }
+
+    function addToOrder(item){
+      const found = order.items.find(i => i.id === item.id);
+      if(found) found.qty += 1; else order.items.push({ ...item, qty:1 });
+      renderOrder();
+    }
+
+    function renderOrder(){
+      const tbody = $('orderBody');
+      tbody.innerHTML = '';
+      order.items.forEach((it, idx) => {
+        const tr = document.createElement('tr');
+        const total = it.price * it.qty;
+        tr.innerHTML = `\
+          <td><div class="d-flex align-items-center"><img src="https://via.placeholder.com/48" class="product-thumb me-2">${it.title}</div></td>\
+          <td><input type="number" min="1" value="${it.qty}" data-idx="${idx}" class="form-control form-control-sm qtyInput"></td>\
+          <td>${fmt(it.price)}</td>\
+          <td>${fmt(total)}</td>\
+          <td><button class="btn btn-sm btn-danger btnRemove" data-idx="${idx}">✕</button></td>\
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.qtyInput').forEach(inp => inp.onchange = (e)=>{
+        const idx = +e.target.dataset.idx; const val = Math.max(1, +e.target.value);
+        order.items[idx].qty = val; renderOrder();
+      });
+      document.querySelectorAll('.btnRemove').forEach(b => b.onclick = ()=>{
+        const idx = +b.dataset.idx; order.items.splice(idx,1); renderOrder();
+      });
+
+      updateTotals();
+    }
+
+    function updateTotals(){
+      const subtotal = order.items.reduce((s,i)=> s + i.price*i.qty, 0);
+      const discountPct = Math.min(100, Math.max(0, +$('discount').value || 0));
+      const taxPct = Math.min(100, Math.max(0, +$('tax').value || 0));
+      const discountVal = subtotal * (discountPct/100);
+      const taxed = (subtotal - discountVal) * (taxPct/100);
+      const total = subtotal - discountVal + taxed;
+
+      $('subtotalText').textContent = fmt(subtotal);
+      $('discountText').textContent = fmt(discountVal);
+      $('taxText').textContent = fmt(taxed);
+      $('totalText').textContent = fmt(total);
+
+      $('statSales').textContent = fmt(recent.reduce((s,r)=> s + r.total, 0) + total);
+      $('statOrders').textContent = recent.length + (order.items.length?1:0);
+      $('statItems').textContent = recent.reduce((s,r)=> s + r.itemsCount, 0) + order.items.reduce((s,i)=> s + i.qty, 0);
+      $('statAvg').textContent = fmt(recent.length ? (recent.reduce((s,r)=> s + r.total,0)/recent.length) : total || 0);
+
+      $('dueAmount')?.textContent && ($('dueAmount').textContent = fmt(total));
+    }
+
+    document.getElementById('btnComplete')?.addEventListener?.('click', ()=>{
+      // placeholder for real checkout (when using backend)
+      alert('This demo file is static — copy API examples into api/ and run on a PHP server to enable full checkout.');
+    });
+
+    document.getElementById('btnNewOrder').addEventListener('click', ()=>{
+      order = { id: order.id + 1, items: [] };
+      $('orderId').textContent = order.id;
+      renderOrder();
+    });
+
+    $('searchMenu').addEventListener('input', (e)=> renderMenu(e.target.value));
+    $('clearSearch').addEventListener('click', ()=>{ $('searchMenu').value=''; renderMenu(); });
+    $('discount').addEventListener('input', updateTotals);
+    $('tax').addEventListener('input', updateTotals);
+
+    function renderRecent(){
+      const el = $('recentOrders'); el.innerHTML = '';
+      recent.forEach(r => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-start';
+        li.innerHTML = `<div><strong>#${r.id}</strong><div class='small text-muted'>${r.time}</div></div><div>${fmt(r.total)}</div>`;
+        el.appendChild(li);
+      });
+    }
+
+    const ctx = document.getElementById('salesChart');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        datasets: [{ label: 'Sales', data: [12, 19, 7, 14, 22, 18, 9] }]
+      },
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
+    });
+    function updateChart(){
+      const base = [0,0,0,0,0,0,0];
+      recent.forEach((r,i)=>{ base[i%7]+= r.total; });
+      order.items.length && (base[new Date().getDay()%7] += parseFloat($('totalText').textContent.replace('$','')));
+      chart.data.datasets[0].data = base; chart.update();
+    }
+
+    // Initialize demo
+    renderMenu(); renderOrder(); renderRecent(); updateChart();
+
+    // Demo checkout button behavior
+    document.getElementById('btnCheckoutDummy').addEventListener('click', ()=>{
+      if(order.items.length === 0){ alert('Order is empty. Add items to continue.'); return; }
+      const mockOrder = { id: order.id, items: order.items.map(i=>({ title:i.title, qty:i.qty, price:i.price })), total: parseFloat($('totalText').textContent.replace('$','')) };
+      recent.unshift({ ...mockOrder, time: new Date().toLocaleString(), itemsCount: mockOrder.items.reduce((s,i)=>s+i.qty,0) });
+      if(recent.length > 8) recent.pop();
+      order = { id: order.id + 1, items: [] };
+      $('orderId').textContent = order.id;
+      renderMenu(); renderOrder(); renderRecent(); updateChart();
+      alert('Demo checkout complete — this is client-side only. For a full stack, copy API files to a PHP server.');
+    });
+
+  </script>
+</body>
+</html>
